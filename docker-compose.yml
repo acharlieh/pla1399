@@ -1,0 +1,55 @@
+name: pla-1399
+
+services:
+  build:
+    image: busybox:latest
+    command: /bin/sh /source/build.sh
+    working_dir: /
+    volumes:
+      - &apps
+        type: bind
+        source: ./app_packages
+        target: /apps
+      - type: bind
+        source: ./app_sources
+        target: /source
+
+  indexer: &base
+    depends_on:
+      - build
+    hostname: idx-18557758657.buttercupfoods.corp
+    image: splunk/splunk:9.0.4.1
+    platform: linux/amd64
+    environment: &environment
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_PASSWORD: password
+      SPLUNK_SEARCH_HEAD_URL: search
+      SPLUNK_INDEXER_URL: indexer
+      SPLUNK_ROLE: splunk_indexer
+      SPLUNK_HEC_TOKEN: 73657420-6279-2064-2E63-6F6D706F7365
+      SPLUNK_APPS_URL: "\
+        /apps/built_ta_pla1399.tgz,\
+        /apps/built_bcf_idx_configs.tgz\
+        "
+    volumes:
+      - <<: *apps
+        read_only: true
+
+  search:
+    <<: *base
+    hostname: sh-i-f09fa7b868756773.buttercupfoods.corp
+    environment:
+      <<: *environment
+      SPLUNK_ROLE: splunk_search_head
+      SPLUNK_HEC_TOKEN: null
+      SPLUNK_APPS_URL: "\
+        /apps/built_ta_pla1399.tgz,\
+        /apps/built_bcf_sh_configs.tgz,\
+        /apps/built_bcf_secops.tgz,\
+        /apps/admins-little-helper-for-splunk_110.tgz\
+        "
+    ports:
+      - target: 8000
+        host_ip: 127.0.0.1
+        protocol: tcp
+        mode: host

@@ -1,0 +1,3 @@
+[props]
+access = read : [ * ], write : [ splunk-system-role ]
+export = system
